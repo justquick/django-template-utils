@@ -1,0 +1,167 @@
+===============================
+Generic text-to-HTML conversion
+===============================
+
+
+It's extremely common to use some form of text-to-HTML conversion
+utility, such as Markdown or Textile, to allow plain text entered by
+staff members or users to be transformed into HTML for output, and not
+terribly uncommon to even store that generated HTML in the database,
+by having it converted when a model instance is saved. And, in the
+bundled ``django.contrib.markup``, Django provides template filters
+which can be used for Markdown, Textile and reStructuredText, making
+this even easier to do.
+
+The downside to all of this is that your code becomes coupled to the
+particular system you're using: if you use Markdown, for example, you
+end up applying the ``markdown`` filter in all of your templates, or
+hard-coding a call to ``markdown.markdown`` in a model's ``save``
+method. And although most of the popular text-to-HTML converters
+support lots of useful options, Django's template filters don't really
+offer a way to take advantage of them.
+
+This module provides a generic ``MarkupFormatter`` class which aims to
+solve these problems; it is designed to allow the use of any
+text-to-HTML converter with minimal coupling of your code.
+
+
+Basic usage
+===========
+
+The ``MarkupFormatter`` class handles text-to-HTML conversion by using
+"filter functions"; by default, three filters are available:
+``markdown``, ``textile`` and ``restructuredtext``, which apply those
+systems. You can, however, enable the use of any system you like by
+writing a new filter function and registering it with an instance of
+``MarkupFormatter``.
+
+In the simplest case, converting text to HTML works by creating an
+instance of ``MarkupFormatter``, then calling it, passing a string and
+the name of a filter to use::
+
+    from template_utils.markup import MarkupFormatter
+    formatter = MarkupFormatter()
+    my_string = """Lorem ipsum dolor sit amet.
+    
+    Consectetuer adipiscing elit."""
+    my_html = formatter(my_string, filter_name='markdown')
+
+You can also pass arbitrary keyword arguments, and they will be handed
+off to the filter function; for example, to use Markdown's "safe mode"
+(which strips raw HTML before processing), you could call it like
+this::
+
+    my_html = formatter(my_string, filter_name='markdown', safe_mode=True)
+
+The ``safe_mode=True`` argument will be handed directly to the
+``markdown`` filter.
+
+To add a new filter, simply define it as a function; for example, to
+achieve the same effect as Django's built-in ``escape`` and
+``linebreaks`` template filters, you could define this function::
+
+    def escape_linebreaks(text, **kwargs):
+        from django.utils.html import escape, linebreaks
+        return linebreaks(escape(text))
+
+Filter functions must accept the string of text to convert as their
+first postional argument, and should accept ``**kwargs`` even if they
+don't do anything with it.
+
+To register the filter, simply call the ``register`` method of an
+instance of ``MarkupFormatter``::
+
+    formatter.register('escape_linebreaks', escape_linebreaks)
+
+The arguments to ``register`` are:
+
+1. A string to use as the name of the filter.
+
+2. The filter function.
+
+Once the filter is registered, it can be used the same as the built-in
+filters::
+
+    my_html = formatter(my_string, filter_name='escape_linebreaks')
+
+**Note:** ``template_utils.markup`` creates an instance of
+``MarkupFormatter``, called ``formatter``; unless you have a need for
+multiple instances of ``MarkupFormatter``, it's probably best to
+import and use that instance (by doing ``from template_utils.markup
+import formatter``). This allows the single instance to be used in
+multiple places, and avoids the need to register any custom filter
+functions with multiple instances.
+
+
+Specifying default behavior in a Django setting
+===============================================
+
+
+To cut down on repetitive typing, ``MarkupFormatter`` can read a
+default filter name and keyword arguments from the Django setting
+``MARKUP_FILTER``; if you specify this setting, it should be a tuple
+with two elements:
+
+1. The name of a filter to use.
+
+2. A dictionary of keyword arguments to pass to it.
+
+So to have Markdown with "safe mode" be the default behavior, you
+would add the following to your settings file::
+
+    MARKUP_FILTER = ('markdown', { 'safe_mode': True })
+
+When you've specified ``MARKUP_FILTER`` in this way, you can perform
+text-to-html conversion just by passing in the string to convert, with
+no other arguments::
+
+    my_html = formatter(my_string)
+
+The filter function specified in ``MARKUP_FILTER`` does not have to be
+in the default filter set; so long as you register a filter of the
+correct name before trying to do any text conversion, it will work.
+
+To have the default behavior apply no conversion at all, specify
+`None` as the filter name and an empty dictionary of keyword
+arguments::
+
+    MARKUP_FILTER = (None, {})
+
+**Note:** if you pass the ``filter_name`` keyword argument when
+performing text-to-HTML conversion, ``MarkupFormatter`` will
+completely ignore the ``MARKUP_FILTER`` setting (it won't even try to
+import the setting), so be sure to explicitly pass any keyword
+arguments you want to use. ``MarkupFormatter`` behaves this way so
+that it can be used stand-alone, without the need to configure or even
+install Django.
+
+
+Applying text-to-HTML conversion in templates
+=============================================
+
+A filter library called ``generic_markup`` is also included here, and
+it contains the filter ``apply_markup``, which imports
+``template_utils.markup.formatter`` and applies it to the text the
+filter is attached to::
+
+    {% load generic_markup %}
+    {{ some_text|apply_markup %}
+
+By itself, ``apply_markup`` will use the default behavior specified in
+``MARKUP_FILTER``, but it does accept a single argument which allows
+you to override the filter name::
+
+    {{ some_text|apply_markup:"textile" }}
+
+This would have the same effect as the following Python code::
+
+    from template_utils.markup import formatter
+    print formatter(some_text, filter_name='textile')
+
+But remember that this will override *all* use of ``MARKUP_FILTER``,
+so any custom keyword arguments you specified there will not be used
+when you pass an argument to ``apply_markup``.
+
+Also, note that on Django trunk templates automatically escape
+variable output by default; the ``apply_markup`` filter will mark its
+output as "safe" in order to avoid escaping of the generated HTML.

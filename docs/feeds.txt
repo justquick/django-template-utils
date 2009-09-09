@@ -1,0 +1,99 @@
+============================
+Parsing and displaying feeds
+============================
+
+
+Retrieving content from an RSS or Atom feed and displaying it in a
+page is a fairly common need; many sites, for example, syndicate
+content from affiliates or partners, and simply parse a feed to obtain
+data which is then displayed in a sidebar as "latest headlines" or
+similar.
+
+To facilitate this, ``template_utils`` includes a template tag library
+for parsing and displaying RSS and Atom feeds. To use these tags,
+you'll need to have ``template_utils`` in your ``INSTALLED_APPS``
+list, and you'll need to have ``{% load feeds %}`` in your template.
+
+
+``include_feed``
+================
+
+Parse an RSS or Atom feed and render a given number of its items
+into HTML.
+
+It is **highly** recommended that you use `Django's template
+fragment caching`_ to cache the output of this tag for a
+reasonable amount of time (e.g., one hour); polling a feed too
+often is impolite, wastes bandwidth and may lead to the feed
+provider banning your IP address.
+
+.. _Django's template fragment caching: http://www.djangoproject.com/documentation/cache/#template-fragment-caching
+
+Arguments should be:
+
+1. The URL of the feed to parse.
+
+2. The number of items to render (if not supplied, renders all
+   items in the feed).
+   
+3. The name of a template to use for rendering the results into HTML.
+
+The template used to render the results will receive two variables:
+
+``items``
+    A list of dictionaries representing feed items, each with 'title',
+    'summary', 'link' and 'date' members.
+
+``feed``
+    The feed itself, for pulling out arbitrary attributes.
+
+Requires the Universal Feed Parser, which can be obtained at
+http://feedparser.org/. See `its documentation`_ for details of the
+parsed feed object.
+
+.. _its documentation: http://feedparser.org/docs/
+
+Syntax::
+
+    {% include_feed [feed_url] [num_items] [template_name] %}
+
+Example::
+
+    {% include_feed "http://www2.ljworld.com/rss/headlines/" 10 feed_includes/ljworld_headlines.html %}
+
+
+``parse_feed``
+==============
+
+Parses a given feed and returns the result in a given context
+variable.
+
+It is **highly** recommended that you use `Django's template
+fragment caching`_ to cache the output of this tag for a
+reasonable amount of time (e.g., one hour); polling a feed too
+often is impolite, wastes bandwidth and may lead to the feed
+provider banning your IP address.
+
+.. _Django's template fragment caching: http://www.djangoproject.com/documentation/cache/#template-fragment-caching
+
+Arguments should be:
+
+1. The URL of the feed to parse.
+
+2. The name of a context variable in which to return the result.
+
+Requires the Universal Feed Parser, which can be obtained at
+http://feedparser.org/. See `its documentation`_ for details of the
+parsed feed object.
+
+.. _its documentation: http://feedparser.org/docs/
+
+Syntax::
+
+    {% parse_feed [feed_url] as [varname] %}
+
+Example::
+
+    {% parse_feed "http://www2.ljworld.com/rss/headlines/" as ljworld_feed %}
+
+

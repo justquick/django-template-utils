@@ -1,0 +1,48 @@
+===============================
+Context processors for settings
+===============================
+
+
+It's often useful for an application to expose the values of certain
+settings -- especially custom settings -- for use in
+templates. Django's ``RequestContext`` and context processors provide
+an easy way to automatically add certain variables to every template
+context, but (for good reasons) Django does not provide a context
+processor which can expose the values of settings.
+
+This module provides a simple function which can generate context
+processors for settings, and a pre-generated context processor for the
+most common use case: media settings.
+
+
+``template_utils.context_processors.settings_processor``
+========================================================
+
+This function takes a list of setting names, and returns a new
+function: a context processor which will add the values of those
+settings to any ``RequestContext`` in which it is used.
+
+So, for example, you might define a file ``context_processors.py`` in
+your application, and place the following in it::
+
+    from template_utils.context_processors import settings_processor
+    my_settings_processor = settings_processor('INTERNAL_IPS', 'SITE_ID')
+
+The function ``my_settings_processor`` would be a context processor
+which added the values of the settings ``INTERNAL_IPS`` and
+``SITE_ID`` to each ``RequestContext`` in which it was used, and then
+you would just need to add
+``myproject.myapp.context_processors.my_settings_processor`` (changing
+the name to suit the actual names of your project and application, of
+course) to your `` TEMPLATE_CONTEXT_PROCESSORS`` setting.
+
+
+``template_utils.context_processors.media``
+===========================================
+
+This is a pre-generated context processor which adds the values of the
+settings ``MEDIA_URL`` and ``ADMIN_MEDIA_PREFIX`` to each
+``RequestContext`` in which it is used.
+
+To enable it, add ``template_utils.context_processors.media`` to your
+``TEMPLATE_CONTEXT_PROCESSORS`` setting.

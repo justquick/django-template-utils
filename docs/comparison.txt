@@ -1,0 +1,93 @@
+===============
+Comparison tags
+===============
+
+
+It's usually a bad idea to have a lot of logic in your templates, but
+occasionally there's a true presentational need for certain
+operations. Django provides an ``ifequal`` tag which tests equality of
+two values, and this tag library supplements it by providing a set of
+tags which can handle other types of comparisons.
+
+To use these tags, you'll need to have ``template_utils`` in your
+``INSTALLED_APPS`` list, and you'll need to have ``{% load comparison
+%}`` in your template.
+
+
+``if_greater``
+==============
+
+Tests whether one value is greater than another.
+
+Syntax::
+
+    {% if_greater [var1] [var2] %}
+    ...do something...
+    {% else %}
+    ...do something else...
+    {% endif_greater %}
+
+The ``else`` clause is optional, and ``var1`` and ``var2`` can be
+template variables or literal values.
+
+Example::
+
+    {% if_greater forloop.counter 1 %}
+    <p>We've been through the loop at least twice.</p>
+    {% else %}
+    <p>This is one of the first two times through the loop.</p>
+    {% endif_greater %}
+
+
+``if_greater_or_equal``
+=======================
+
+Similar to the ``if_greater`` tag, but applies a "greater than or
+equal to" comparison.
+
+Syntax::
+
+    {% if_greater_or_equal [var1] [var2] %}
+    ...do something...
+    {% else %}
+    ...do something else...
+    {% endif_greater_or_equal %}
+
+The ``else`` clause is optional, and ``var1`` and ``var2`` can be
+template variables or literal values.
+
+
+``if_less``
+===========
+
+Similar to the ``if_greater`` tag, but tests whether one value is less
+than another.
+
+Syntax::
+
+    {% if_less [var1] [var2] %}
+    ...do something...
+    {% else %}
+    ...do something else...
+    {% endif_less %}
+
+The ``else`` clause is optional, and ``var1`` and ``var2`` can be
+template variables or literal values.
+
+
+``if_less_or_equal``
+====================
+
+Similar to the ``if_less`` tag, but applies a "less than or equal to"
+comparison.
+
+Syntax::
+
+    {% if_less_or_equal [var1] [var2] %}
+    ...do something...
+    {% else %}
+    ...do something else...
+    {% endif_less_or_equal %}
+
+The ``else`` clause is optional, and ``var1`` and ``var2`` can be
+template variables or literal values.

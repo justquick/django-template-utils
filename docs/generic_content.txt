@@ -1,0 +1,124 @@
+=========================
+Generic content retrieval
+=========================
+
+A common task in Django applications is writing template tags which
+retrieve particular pieces of content; for example, a weblog might
+need a "get latest entries" tag, while a news site would want "get
+latest stories", and so on. Writing these tags to work only with
+specific models results in duplication of code across applications, so
+``template_utils`` provides a set of template tags which can retrieve
+content from any installed model, according to certain criteria.
+
+To use these tags, you'll need to have ``template_utils`` in your
+``INSTALLED_APPS`` list, and you'll need to have ``{% load
+generic_content %}`` in your template.
+
+
+``get_latest_object``
+=====================
+
+This tag retrieves the "latest" object from a model, according to the
+model's default ordering.
+
+Syntax::
+
+    {% get_latest_object [app_name].[model_name] as [varname] %}
+
+So, for example, to retrieve the latest ``FreeComment`` posted::
+
+    {% get_latest_object comments.freecomment as latest_comment %}
+
+
+``get_latest_objects``
+======================
+
+Similar to ``get_latest_object``, but takes an additional argument --
+a number -- and returns a list of that many objects.
+
+Syntax::
+
+    {% get_latest_objects [app_name].[model_name] [num] as [varname] %}
+
+Continuing with comments as an example::
+
+    {% get_latest_objects comments.freecomment 5 as latest_comments %}
+
+
+``get_random_object``
+=====================
+
+Retrieves a single object, randomly selected, from a model.
+
+Syntax::
+
+    {% get_random_object [app_name].[model_name] as [varname] %}
+
+So to retrieve a random comment::
+
+    {% get_random_object comments.freecomment as random_comment %}
+
+
+``get_random_objects``
+======================
+
+Much like ``get_latest_objects``, this tag returns a given number of
+objects (randomly selected).
+
+Syntax::
+
+    {% get_random_object [app_name].[model_name] [num] as [varname] %}
+
+
+``retrieve_object``
+===================
+
+Retrieves a single specific object by primary-key lookup.
+
+Syntax::
+
+    {% retrieve_object [app_name].[model_name] [primary_key] as [varname] %}
+
+For example, if you wanted to retrieve a flatpage with ``id`` 12::
+
+    {% retrieve_object flatpages.flatpage 12 as my_flatpage %}
+
+
+Performing additional filtering
+===============================
+
+The tags described above all use the default manager of the model
+specified in the tag call, and by default do not perform any filtering
+on the default ``QuerySet`` obtained from that manager. However, as a
+convenience for situations where it is desirable or necessary to
+filter the objects (e.g., to retrieve the latest public comments, or
+latest objects with a particular status), two mechanisms are supplied:
+one broad and one fine-grained.
+
+The broader method involves adding an extra setting to your Django
+settings file: ``GENERIC_CONTENT_LOOKUP_KWARGS``. The value of this
+setting should be a dictionary with keys corresponding to names of
+models (e.g., "comments.freecomment", "auth.user", etc.) and values
+containing dictionaries of valid database lookup arguments for those
+models. When this setting exists and contains an entry for the model
+whose objects are being queried, ``get_latest_object``,
+``get_latest_objects``, ``get_random_object`` and
+``get_random_objects`` will all read the lookup arguments and apply
+them to the model's default ``QuerySet``.
+
+So, for example, if you wanted these tags to only retrieve comments
+whose ``is_public`` field is set to ``True`` (useful if you're doing
+comment moderation), you'd add this to your settings file:
+
+    GENERIC_CONTENT_LOOKUP_KWARGS = {
+        'comments.freecomment': { 'is_public__exact': True }
+    }
+
+Because it does a primary-key lookup (and thus it's safe to assume you
+know precisely which object you want), ``retrieve_object`` does not
+filter in any situation.
+
+The finer-grained method involves subclassing the ``Node`` class
+common to most of the tags listed above; they're instances of
+``template_utils.templatetags.generic_content.GenericContentNode``,
+which is documented in the file ``nodes.txt`` in this directory.

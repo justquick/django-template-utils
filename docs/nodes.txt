@@ -1,0 +1,61 @@
+============================
+Custom template node classes
+============================
+
+
+The core of Django's template system is the class
+``django.template.Node``; a Django template is, ultimately, a list of
+``Node`` instances, and it is the output of each ``Node``'s
+``render()`` method which becomes the final template output.
+
+As such, most custom template tags involve subclasses of ``Node``, and
+many classes of custom tags can be greatly simplified by providing an
+intermediate ``Node`` class which implements a generic form of the
+desired behavior. Included in ``template_utils.nodes`` are two
+``Node`` subclasses which follow that pattern.
+
+
+``template_utils.nodes.ContextUpdatingNode``
+============================================
+
+This is a ``Node`` subclass which simplifies the common case of
+writing a custom tag to add some values to the current template
+context.
+
+To use, import and subclass it, and -- rather than defining
+``render()`` as with a standard ``Node`` subclass -- define a method
+named ``get_content()``. This method should accept a ``Context``
+instance as its first positional argument, and should return a
+dictionary; the keys and values in that dictionary will be added to
+the context as new variables and values.
+
+
+``template_utils.nodes.GenericContentNode``
+===========================================
+
+Base Node class for retrieving objects from any model.
+
+By itself, this class will retrieve a number of objects from a
+particular model (specified by an "app_name.model_name" string)
+and store them in a specified context variable (these are the
+``num``, ``model`` and ``varname`` arguments to the constructor,
+respectively), but is also intended to be subclassed for
+customization.
+
+There are two ways to add extra bits to the eventual database
+lookup:
+
+1. Add the setting ``GENERIC_CONTENT_LOOKUP_KWARGS`` to your
+   settings file; this should be a dictionary whose keys are
+   "app_name.model_name" strings corresponding to models, and whose
+   values are dictionaries of keyword arguments which will be
+   passed to ``filter()``.
+
+2. Subclass and override ``_get_query_set``; all that's expected
+   is that it will return a ``QuerySet`` which will be used to
+   retrieve the object(s). The default ``QuerySet`` for the
+   specified model (filtered as described above) will be available
+   as ``self.query_set`` if you want to work with it.
+
+For finer-grained flexibility, override ``__init__()`` to control the
+manner in which lookup arguments are determined.
