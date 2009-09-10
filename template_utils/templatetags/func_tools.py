@@ -23,23 +23,22 @@ class FunctionalNode(template.Node):
         self.varname = varname
     
     def render(self, context):
-        def lookup(var, context):
+        def lookup(var):
             try:
                 return var.resolve(context)
             except template.VariableDoesNotExist:
-                return str(var)
+                return unicode(var)
        
-        args = [lookup(var, context) for var in self.args]
+        args = map(lookup, self.args)
         func = functions[self.func]
        
         if isinstance(func, basestring):
             func = import_function(func)
-        if hasattr(func,'takes_context') and \
-          getattr(func,'takes_context'):
+        if hasattr(func,'takes_context') and getattr(func,'takes_context'):
             args = [context] + args
             
-        result = func( *args, **dict([(k, lookup(var, context)) \
-            for k,var in self.kwargs.items()]))     
+        result = func( *args, **dict([(k, lookup(v)) \
+            for k,v in self.kwargs.items()]))     
         if self.varname:
             context[self.varname] = result
             return ''
@@ -55,7 +54,7 @@ def do_function(parser, token):
 
     Examples::
     
-        {% listdir '.' %}	    
+        {% listdir '.' colors=True %}	    
 
     """
     varname = None

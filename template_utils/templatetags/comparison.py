@@ -1,13 +1,8 @@
 """
 Tags for performing basic value comparisons in templates.
-To add custom comparisons, update your TEMPLATE_COMPARISON_DICT setting
 """
-import re
 from django import template
-try:
-    set
-except:
-    from sets import Set as set
+
 
 from template_utils import comparisons
 
@@ -19,6 +14,7 @@ class ComparisonNode(template.Node):
         self.nodelist_true, self.nodelist_false = nodelist_true, nodelist_false
     
     def render(self, context):
+        resolve = lambda var: var.resolve(context)
         try:
             if comparisons[self.comparison](
               *[var.resolve(context) for var in self.vars]):
@@ -42,11 +38,11 @@ def do_comparison(parser, token):
     
     Syntax::
     
-        {% [comparison] [var1] [var2] [var...] %}
+        {% if_[comparison] [var1] [var2] [var...] [negate] %}
         ...
         {% else %}
         ...
-        {% end[comparison] %}
+        {% endif_[comparison] %}
 
     
     Supported comparisons are ``match``, ``find``, ``startswith``, ``endswith``,

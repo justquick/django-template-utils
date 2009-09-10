@@ -7,11 +7,15 @@ It's usually a bad idea to have a lot of logic in your templates, but
 occasionally there's a true presentational need for certain
 operations. Django provides an ``ifequal`` tag which tests equality of
 two values, and this tag library supplements it by providing a set of
-tags which can handle other types of comparisons.
+tags which can handle other types of comparisons. It also now has the ability
+to add your own custom comparisons in via register/unregister functionality
 
 To use these tags, you'll need to have ``template_utils`` in your
-``INSTALLED_APPS`` list, and you'll need to have ``{% load comparison
-%}`` in your template.
+``INSTALLED_APPS`` list, and you'll need to have ``{% load comparison%}``
+in your template.
+
+For all the tags below, the ``else`` clause is optional, and all passed arguments
+and keyword arguments may be template variables or literal values.
 
 
 ``if_greater``
@@ -26,9 +30,6 @@ Syntax::
     {% else %}
     ...do something else...
     {% endif_greater %}
-
-The ``else`` clause is optional, and ``var1`` and ``var2`` can be
-template variables or literal values.
 
 Example::
 
@@ -53,9 +54,6 @@ Syntax::
     ...do something else...
     {% endif_greater_or_equal %}
 
-The ``else`` clause is optional, and ``var1`` and ``var2`` can be
-template variables or literal values.
-
 
 ``if_less``
 ===========
@@ -70,9 +68,6 @@ Syntax::
     {% else %}
     ...do something else...
     {% endif_less %}
-
-The ``else`` clause is optional, and ``var1`` and ``var2`` can be
-template variables or literal values.
 
 
 ``if_less_or_equal``
@@ -89,5 +84,110 @@ Syntax::
     ...do something else...
     {% endif_less_or_equal %}
 
-The ``else`` clause is optional, and ``var1`` and ``var2`` can be
-template variables or literal values.
+
+``if_startswith`` and ``if_endswith``
+=====================================
+
+A string comparison to determine if one string startswith or endswith another string
+
+Syntax::
+
+    {% if_startswith [str1] [str2] %}
+    ...do something...
+    {% else %}
+    ...do something else...
+    {% endif_less_or_equal %}
+
+Example::
+    
+    {% if_startswith request.path '/about' %}
+    You are at the about section
+    {% endif_startswith %}    
+
+``if_contains`` and ``if_matches``
+=====================================
+
+A string comparison for finding whether one string contains another or
+whether one string matches a regular expression
+
+Syntax::
+
+    {% if_matches [string] [pattern] %}
+    ...do something...
+    {% else %}
+    ...do something else...
+    {% endif_contains %}
+    
+Example::
+
+    {% if_matches request.path '^/about' %}
+    You are still in the about section
+    {% endif_matches %}
+
+``if_divisible_by``
+=====================================
+
+A numerical comparison to see if one number is divisible by another
+
+Syntax::
+
+    {% if_divisible_by [n1] [n2] %}
+    ...do something...
+    {% else %}
+    ...do something else...
+    {% endif_divisible_by %}
+    
+Example::
+    
+    {% for object in object_list %}
+        {% if_divisible_by forloop.counter 3 %}
+            fizz
+        {% endif_divisible_by %}
+    {% endfor %}
+
+``if_superset`` and ``if_subset``
+=====================================
+
+A list/set comparison to determine if one set is a subset or superset of another
+
+Syntax::
+
+    {% if_subset [set1] [set2] %}
+    ...do something...
+    {% else %}
+    ...do something else...
+    {% endif_subset %}
+    
+
+Custom Comparisons
+==================
+
+You may declare your custom comparison tags in any part of your codebase
+that is run at compile time (eg models.py, admin.py, or __init__.py).
+Here's some example use with simple slug comparisons:
+    
+    # import the registry
+    from template_utils import comparisons
+
+    # make a function
+    def slug_func(test_slug, *slugs)
+        return test_slug.strip() and test_slug in slugs
+            
+    # add it to the registry
+    comparisons.register('slug_in', slug_func)
+
+The ``slug_func`` just tests to see if the ``test_slug`` is in the list of
+other ``slugs``. They take arguments and keyword arguments from the template
+and return True or False whether the condition has been met.
+Heres an example of how to use it in a template:
+
+    {% if_slug_in object.slug 'foo' 'bar' 'baz' %}
+        You are looking at a foobarbaz object
+    {% else %}
+        This is not a foobarbaz object
+    {% endif_slug_in %}
+    
+The first argument is a string of the name of tag you want to use.
+The second argument is function to use. This may be the function itself like the
+example above, or a string of the module you wish to use,
+eg 'django.core.serializers.serialize'.

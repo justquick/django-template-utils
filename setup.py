@@ -1,11 +1,11 @@
 from distutils.core import setup
 
 setup(name='template_utils',
-      version='0.4p2',
+      version='0.5',
       description='Template-related utilities for Django applications',
-      author='James Bennett',
-      author_email='james@b-list.org',
-      url='http://code.google.com/p/django-template-utils/',
+      author='James Bennett, Justin Quick',
+      author_email='james@b-list.org, justquick@gmail.com',
+      url='http://github.com/justquick/django-template-utils/tree/master',
       packages=['template_utils', 'template_utils.templatetags'],
       classifiers=['Development Status :: 4 - Beta',
                    'Environment :: Web Environment',
