@@ -18,27 +18,31 @@ def import_function(s):
 class FunctionalNode(template.Node):
     def __init__(self, func, varname=None, *args, **kwargs):
         self.func = func
-        self.args = map(template.Variable, args)
-        self.kwargs = dict([(k,template.Variable(v)) for k,v in kwargs.items()])
+        self.args = args
+        self.kwargs = kwargs
         self.varname = varname
     
     def render(self, context):
-        def lookup(var):
-            try:
-                return var.resolve(context)
-            except template.VariableDoesNotExist:
-                return unicode(var)
+        def lookup(var, resolve=True):
+            if resolve:
+                var = template.Variable(var)
+                try:
+                    return var.resolve(context)
+                except template.VariableDoesNotExist:
+                    return unicode(var)
+            return unicode(var)
        
-        args = map(lookup, self.args)
         func = functions[self.func]
-       
+        resolve = not (hasattr(func, 'do_not_resolve') and getattr(func, 'do_not_resolve'))
+        args = [lookup(var, resolve) for var in self.args]
+        kwargs = dict([(k, lookup(var, resolve)) for k,var in self.kwargs.items()])
+        
         if isinstance(func, basestring):
             func = import_function(func)
         if hasattr(func,'takes_context') and getattr(func,'takes_context'):
             args = [context] + args
             
-        result = func( *args, **dict([(k, lookup(v)) \
-            for k,v in self.kwargs.items()]))     
+        result = func(*args, **kwargs)     
         if self.varname:
             context[self.varname] = result
             return ''
