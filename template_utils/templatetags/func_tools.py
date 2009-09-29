@@ -3,7 +3,8 @@ from shlex import split
 from django.utils.importlib import import_module
 from django import template
 from django.conf import settings
-
+from django.template.loader import get_template
+from django.template.context import Context
 from template_utils import functions
 
 def import_function(s):
@@ -36,21 +37,26 @@ class FunctionalNode(template.Node):
         resolve = not (hasattr(func, 'do_not_resolve') and getattr(func, 'do_not_resolve'))
         args = [lookup(var, resolve) for var in self.args]
         kwargs = dict([(k, lookup(var, resolve)) for k,var in self.kwargs.items()])
-        
         if isinstance(func, basestring):
             func = import_function(func)
-        if hasattr(func,'takes_context') and getattr(func,'takes_context'):
+        if hasattr(func,'takes_context') and getattr(func, 'takes_context'):
             args = [context] + args
-            
-        result = func(*args, **kwargs)     
+        if hasattr(func, 'is_inclusion') and getattr(func, 'is_inclusion'):
+            template_name,ctx = func(*args, **kwargs)
+            if not isinstance(ctx, Context):
+                ctx = Context(ctx)
+            result = get_template(template_name).render(ctx)
+        else:
+            result = func(*args, **kwargs)
         if self.varname:
             context[self.varname] = result
             return ''
         return result
+    
         
 def do_function(parser, token):
     """
-    Compares two values.
+    Performs a defined function an either outputs results, or stores results in template variable
     
     Syntax::
     
@@ -62,19 +68,21 @@ def do_function(parser, token):
 
     """
     varname = None
-    bits = split(' '.join(token.contents.split()))
-    if len(bits)>2:
-        if bits[-2] == 'as':
-            varname = bits[-1]
-            bits = bits[:-2]
-    kwarg_re = re.compile('^[A-z]\w+\=')
-    kwargs = {}
-    for n,bit in enumerate(bits):
-        if kwarg_re.match(bit):
-            del bits[n]
-            kwargs[bit.split('=')[0]] = bit[bit.index('=')+1:]
-    return FunctionalNode(bits[0], varname, *bits[1:], **kwargs)
-    
+    bits = [filter(lambda x: x != '\x00', token) for token in split(' '.join(token.contents.split()))]
+    if len(bits) > 2 and bits[-2] == 'as':
+        varname = bits[-1]
+        bits = bits[:-2]
+    kwarg_re = re.compile(r'(^[A-z]+)\=(.+)')
+    args, kwargs = (),{}
+    for bit in bits[1:]:
+        match = kwarg_re.match(bit)
+        if match:
+            kwargs[match.group(1)] = match.group(2)
+        else:
+            args += (bit,)
+    return FunctionalNode(bits[0], varname, *args, **kwargs)
+
+
 register = template.Library()
 for tag_name in functions:
     register.tag(tag_name, do_function)
