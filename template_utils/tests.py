@@ -79,6 +79,10 @@ class TemplateTest(TestCase):
         md5 = '37b51d194a7513e45b56f6524f2d51f2'
         self.assertEqual(render('{{ foo|md5 }}{% md5 foo %}', ctx), md5*2)
         
+    def test_greater(self):
+        t = '{% if_greater 2 1 %}yup{% endif_greater %}'
+        self.assertEquals(render(t), u'yup')
+        
     # To test this next one:
     #   get markdown (pip install markdown)
     #   add 'django.contrib.markup'  to your INSTALLED_APPS
