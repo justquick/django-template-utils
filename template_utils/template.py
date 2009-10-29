@@ -107,3 +107,7 @@ def sha1(value):
     return sha_constructor(value).hexdigest()
 sha1.filter = 1
 sha1.function = 1
+
+def render_var(context, nodelist):
+    return nodelist.render(context)
+render_var.block = 1

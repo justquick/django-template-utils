@@ -36,7 +36,7 @@ class TemplateRegistry(dict):
             raise NotRegistered('This function %s is not registered' % name)
         del self[name]
         
-comparisons, functions, filters = TemplateRegistry(), TemplateRegistry(), TemplateRegistry()
+comparisons, functions, filters, blocks = TemplateRegistry(), TemplateRegistry(), TemplateRegistry(), TemplateRegistry()
 
 more_builtins = getattr(settings, 'DEFAULT_BUILTIN_TAGS', ())
 if more_builtins:
@@ -50,6 +50,11 @@ for app_name in settings.INSTALLED_APPS:
     for name in dir(mod):
         obj = getattr(mod, name)
         if callable(obj):
+            if hasattr(obj, 'block'):
+                if hasattr(obj, 'name'):
+                    blocks.register(getattr(obj, 'name'), obj)
+                else:
+                    blocks.register(obj)
             if hasattr(obj, 'function'):
                 if hasattr(obj, 'name'):
                     functions.register(getattr(obj, 'name'), obj)

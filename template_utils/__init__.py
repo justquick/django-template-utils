@@ -1,1 +1,1 @@
-from registry import functions, comparisons, filters
+from registry import functions, comparisons, filters, blocks

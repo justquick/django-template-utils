@@ -83,6 +83,10 @@ class TemplateTest(TestCase):
         t = '{% if_greater 2 1 %}yup{% endif_greater %}'
         self.assertEquals(render(t), u'yup')
         
+    def test_block(self):
+        t = '{% render_var as myvar %}hallowtf{% endrender_var %}{{ myvar }}'
+        self.assertEquals(render(t), 'hallowtf')
+        
     # To test this next one:
     #   get markdown (pip install markdown)
     #   add 'django.contrib.markup'  to your INSTALLED_APPS
